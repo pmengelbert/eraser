@@ -345,8 +345,9 @@ func (r *Reconciler) handleNewJob(ctx context.Context, imageJob *eraserv1.ImageJ
 		for pod := range podQueue {
 			// start thread to wait for PodReady
 			go func(pod *corev1.Pod) {
-				if err := wait.PollImmediate(time.Second, time.Minute*3, isPodReady(pod)); err != nil {
-					log.Error(err, "error waiting for PodReady phase", pod.Name, pod.Status.Phase)
+				podName := pod.GetName()
+				if err := wait.PollImmediate(time.Second, time.Minute*3, r.isPodReady(podName)); err != nil {
+					log.Error(err, "error waiting for PodReady phase", podName, pod.Status.Phase)
 				}
 				waitGroup.Done()
 			}(pod)
@@ -400,12 +401,19 @@ func (r *Reconciler) handleNewJob(ctx context.Context, imageJob *eraserv1.ImageJ
 	return nil
 }
 
-func isPodReady(pod *corev1.Pod) wait.ConditionFunc {
+func (r *Reconciler) isPodReady(podName string) wait.ConditionFunc {
 	return func() (bool, error) {
-		if pod.Status.Phase == corev1.PodPhase(corev1.PodReady) {
-			return true, nil
+		pod := corev1.Pod{}
+
+		err := r.Get(context.TODO(), types.NamespacedName{
+			Namespace: eraserUtils.GetNamespace(),
+			Name:      podName,
+		}, &pod)
+		if err != nil {
+			return false, err
 		}
-		return false, nil
+
+		return pod.Status.Phase == corev1.PodPhase(corev1.PodReady), nil
 	}
 }
 
