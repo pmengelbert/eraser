@@ -333,6 +333,7 @@ func (r *Reconciler) handleNewJob(ctx context.Context, imageJob *eraserv1.ImageJ
 	}
 
 	podSpecTemplate := template.Template.Spec
+	pods := []types.NamespacedName{}
 	for i := range nodeList {
 		log := log.WithValues("node", nodeList[i].Name)
 		podSpec, err := copyAndFillTemplateSpec(&podSpecTemplate, env, &nodeList[i])
@@ -368,20 +369,32 @@ func (r *Reconciler) handleNewJob(ctx context.Context, imageJob *eraserv1.ImageJ
 		}
 		log.Info("Started "+containerName+" pod on node", "nodeName", nodeName)
 
-		if err := wait.PollImmediate(time.Second, time.Minute, isPodReady(pod)); err != nil {
-			log.Error(err, "error waiting for PodReady phase", pod.Name, pod.Status.Phase)
+		pods = append(pods, types.NamespacedName{
+			Namespace: pod.GetNamespace(),
+			Name:      pod.GetName(),
+		})
+
+	}
+
+	for _, pod := range pods {
+		if err := wait.PollImmediate(time.Second, time.Minute, r.isPodReady(pod)); err != nil {
+			log.Error(err, "error waiting for PodReady phase", "podName", pod.Name)
 		}
 	}
 
 	return nil
 }
 
-func isPodReady(pod *corev1.Pod) wait.ConditionFunc {
+func (r *Reconciler) isPodReady(podInfo types.NamespacedName) wait.ConditionFunc {
 	return func() (bool, error) {
-		if pod.Status.Phase == corev1.PodPhase(corev1.PodReady) {
-			return true, nil
+		pod := corev1.Pod{}
+		err := r.Get(context.TODO(), podInfo, &pod)
+		if err != nil {
+			return false, client.IgnoreNotFound(err)
 		}
-		return false, nil
+
+		ready := pod.Status.Phase != corev1.PodPhase(corev1.PodPending)
+		return ready, nil
 	}
 }
 
