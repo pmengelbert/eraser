@@ -6,8 +6,10 @@ import (
 )
 
 var (
-	// BuildVersion is version set on build.
-	BuildVersion string
+	// buildVersion is version set on build.
+	buildVersion string
+	// buildVersion is version set on build.
+	BuildVersion = buildVersion
 	// DefaultRepo is the default repo for images.
 	DefaultRepo = "ghcr.io/azure"
 	// buildTime is the date for the binary build.
@@ -18,5 +20,5 @@ var (
 
 // GetUserAgent returns a user agent of the format eraser/<component>/<version> (<goos>/<goarch>) <commit>/<timestamp>.
 func GetUserAgent(component string) string {
-	return fmt.Sprintf("eraser/%s/%s (%s/%s) %s/%s", component, BuildVersion, runtime.GOOS, runtime.GOARCH, vcsCommit, buildTime)
+	return fmt.Sprintf("eraser/%s/%s (%s/%s) %s/%s", component, buildVersion, runtime.GOOS, runtime.GOARCH, vcsCommit, buildTime)
 }
