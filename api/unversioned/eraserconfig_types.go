@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package unversioned
 
 import (
 	"encoding/json"
@@ -78,9 +78,6 @@ type OptionalContainerConfig struct {
 	ContainerConfig `json:",inline"`
 }
 
-// +kubebuilder:subresource:image
-// +kubebuilder:subresource:request
-// +kubebuilder:subresource:limit
 type ContainerConfig struct {
 	Image   RepoTag              `json:"image,omitempty"`
 	Request ResourceRequirements `json:"request,omitempty"`
@@ -88,10 +85,6 @@ type ContainerConfig struct {
 	Config  *string              `json:"config,omitempty"`
 }
 
-// +kubebuilder:subresource:scheduling
-// +kubebuilder:subresource:profile
-// +kubebuilder:subresource:imageJob
-// +kubebuilder:subresource:nodeFilter
 type ManagerConfig struct {
 	Runtime           Runtime          `json:"runtime,omitempty"`
 	OTLPEndpoint      string           `json:"otlpEndpoint,omitempty"`
@@ -114,7 +107,6 @@ type ProfileConfig struct {
 	Port    int  `json:"port,omitempty"`
 }
 
-// +kubebuilder:subresource:cleanup
 type ImageJobConfig struct {
 	SuccessRatio float64               `json:"successRatio,omitempty"`
 	Cleanup      ImageJobCleanupConfig `json:"cleanup,omitempty"`
@@ -140,9 +132,6 @@ type RepoTag struct {
 	Tag  string `json:"tag,omitempty"`
 }
 
-// +kubebuilder:subresource:collector
-// +kubebuilder:subresource:scanner
-// +kubebuilder:subresource:remover
 type Components struct {
 	Collector OptionalContainerConfig `json:"collector,omitempty"`
 	Scanner   OptionalContainerConfig `json:"scanner,omitempty"`
@@ -150,8 +139,6 @@ type Components struct {
 }
 
 //+kubebuilder:object:root=true
-// +kubebuilder:subresource:manager
-// +kubebuilder:subresource:components
 
 // EraserConfig is the Schema for the eraserconfigs API.
 type EraserConfig struct {
@@ -162,8 +149,4 @@ type EraserConfig struct {
 
 	Manager    ManagerConfig `json:"manager"`
 	Components Components    `json:"components"`
-}
-
-func init() {
-	SchemeBuilder.Register(&EraserConfig{})
 }
