@@ -3,7 +3,9 @@
 ARG BUILDERIMAGE="golang:1.20-bullseye"
 ARG STATICBASEIMAGE="gcr.io/distroless/static:latest"
 ARG STATICNONROOTBASEIMAGE="gcr.io/distroless/static:nonroot"
-ARG BUILDKIT_SBOM_SCAN_STAGE=builder,manager-build,collector-build,remover-build,trivy-scanner-build
+ARG TRIVYBINARYIMAGE="ghcr.io/pmengelbert/trivy:latest"
+ARG BUILDKIT_SBOM_SCAN_STAGE=builder,manager-build,collector-build,eraser-build,trivy-scanner-build
+
 
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM $BUILDERIMAGE AS builder
@@ -37,17 +39,19 @@ RUN \
     --mount=type=cache,target=/go/pkg/mod \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build ${LDFLAGS:+-ldflags "$LDFLAGS"} -o out/collector ./pkg/collector
 
-FROM builder AS remover-build
+FROM builder AS eraser-build
 RUN \
     --mount=type=cache,target=${GOCACHE} \
     --mount=type=cache,target=/go/pkg/mod \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build ${LDFLAGS:+-ldflags "$LDFLAGS"} -o out/remover ./pkg/remover
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build ${LDFLAGS:+-ldflags "$LDFLAGS"} -o out/eraser ./pkg/eraser
 
 FROM builder AS trivy-scanner-build
 RUN \
     --mount=type=cache,target=${GOCACHE} \
     --mount=type=cache,target=/go/pkg/mod \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build ${LDFLAGS:+-ldflags "$LDFLAGS"} -o out/trivy-scanner ./pkg/scanners/trivy
+
+FROM --platform=$BUILDPLATFORM $TRIVYBINARYIMAGE as trivy-builder
 
 FROM --platform=$TARGETPLATFORM $STATICNONROOTBASEIMAGE AS manager
 WORKDIR /
@@ -59,11 +63,12 @@ FROM --platform=$TARGETPLATFORM $STATICBASEIMAGE as collector
 COPY --from=collector-build /workspace/out/collector /
 ENTRYPOINT ["/collector"]
 
-FROM --platform=$TARGETPLATFORM $STATICBASEIMAGE as remover
-COPY --from=remover-build /workspace/out/remover /
-ENTRYPOINT ["/remover"]
+FROM --platform=$TARGETPLATFORM $STATICBASEIMAGE as eraser
+COPY --from=eraser-build /workspace/out/eraser /
+ENTRYPOINT ["/eraser"]
 
 FROM --platform=$TARGETPLATFORM $STATICBASEIMAGE as trivy-scanner
+COPY --from=trivy-builder /trivy /usr/local/bin/trivy
 COPY --from=trivy-scanner-build /workspace/out/trivy-scanner /
 WORKDIR /var/lib/trivy
 ENTRYPOINT ["/trivy-scanner"]
