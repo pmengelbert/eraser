@@ -8,3 +8,13 @@ containerdConfigPatches:
 - |
   [grpc]
     address = "/fake/socket/address.sock"
+kubeadmConfigPatches:
+- |
+  kind: InitConfiguration
+  nodeRegistration:
+    criSocket: "/fake/socket/address.sock"
+- |
+  kind: JoinConfiguration
+  nodeRegistration:
+    criSocket: "/fake/socket/address.sock"
+
