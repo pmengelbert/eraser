@@ -422,6 +422,7 @@ func (r *Reconciler) createImageJob(ctx context.Context) (ctrl.Result, error) {
 			VolumeMounts: []corev1.VolumeMount{
 				{MountPath: "/run/eraser.sh/shared-data", Name: "shared-data"},
 				{MountPath: cfgDirname, Name: configVolumeName},
+				{MountPath: "/var/lib/containerd/io.containerd.content.v1.content", Name: "containerd-data"},
 			},
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -448,6 +449,14 @@ func (r *Reconciler) createImageJob(ctx context.Context) (ctrl.Result, error) {
 				},
 			},
 		}
+		jobTemplate.Spec.Volumes = append(jobTemplate.Spec.Volumes, corev1.Volume{
+			Name: "containerd-data",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/var/lib/containerd/io.containerd.content.v1.content",
+				},
+			},
+		})
 		jobTemplate.Spec.Containers = append(jobTemplate.Spec.Containers, scannerContainer)
 	}
 

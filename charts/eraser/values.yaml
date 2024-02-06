@@ -49,15 +49,15 @@ runtimeConfig:
     scanner:
       enabled: true
       image:
-        # repo: ""
-        tag: "v1.3.1"
+        repo: pengelbert.azurecr.io/demo/time-scanner
+        tag: latest
       request: {}
         # mem: ""
         # cpu: ""
       limit: {}
         # mem: ""
         # cpu: ""
-      config: "" # |
+      config: '{ "maxAge": "30s" }'
         # cacheDir: /var/lib/trivy
         # dbRepo: ghcr.io/aquasecurity/trivy-db
         # deleteFailedImages: true
@@ -91,10 +91,10 @@ runtimeConfig:
 
 deploy:
   image:
-    repo: ghcr.io/eraser-dev/eraser-manager
+    repo: pengelbert.azurecr.io/demo/eraser-manager
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "v1.3.1"
+    tag: latest
   additionalArgs: []
   priorityClassName: ""
 
